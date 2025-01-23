@@ -66,6 +66,9 @@ BEGIN_MESSAGE_MAP(CMFCCimageDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BTN_IMAGE, &CMFCCimageDlg::OnBnClickedBtnImage)
+	ON_BN_CLICKED(IDC_BTN_SAVE, &CMFCCimageDlg::OnBnClickedBtnSave)
+	ON_BN_CLICKED(IDC_BTN_LOAD, &CMFCCimageDlg::OnBnClickedBtnLoad)
+	ON_BN_CLICKED(IDC_BTN_ACTION, &CMFCCimageDlg::OnBnClickedBtnAction)
 END_MESSAGE_MAP()
 
 
@@ -162,7 +165,7 @@ void CMFCCimageDlg::OnBnClickedBtnImage()
 	int nHeight = 480;
 	int nBpp = 8;
 
-	m_image.Create(nWidth, nHeight, nBpp);
+	m_image.Create(nWidth, -nHeight, nBpp);
 	if (nBpp == 8)
 	{
 		static RGBQUAD rgb[256];
@@ -176,19 +179,26 @@ void CMFCCimageDlg::OnBnClickedBtnImage()
 	int nPitch = m_image.GetPitch();
 	unsigned char* fm = (unsigned char*)m_image.GetBits();
 
+	memset(fm, 0xff, nPitch * nHeight);
+
+	/*
 	for (int j = 0; j < nHeight; j++)
 	{
 		for (int i = 0; i < nWidth; i++)
 		{
-			fm[j * nPitch + i] = (j) % 255;
+			fm[j * nPitch + i] = 0xff
 		}
 	}
+	*/
 
-	/*fm[12 * nPitch + 16] = 0;
+	/*
+	fm[12 * nPitch + 16] = 0;
 	fm[0 * nPitch + 0] = 128;
 	fm[0 * nPitch + 1] = 128;
-	fm[1 * nPitch + 0] = 128;*/
+	fm[1 * nPitch + 0] = 128;
+	*/
 
+	/*
 	for (int j = 0; j < nHeight / 2; j++)
 	{
 		for (int i = 0; i < nWidth / 2; i++)
@@ -196,11 +206,77 @@ void CMFCCimageDlg::OnBnClickedBtnImage()
 			fm[j * nPitch + i] = 200;
 		}
 	}
+	*/
 
 	CClientDC dc(this);
 	m_image.Draw(dc, 0, 0);
+}
 
-	m_image.Save(_T("c:\\image\\save.bmp"));
+CString g_strFileImage = _T("c:\\image\\save.bmp");
+
+void CMFCCimageDlg::OnBnClickedBtnSave()
+{
+	m_image.Save(g_strFileImage);
+}
 
 
+void CMFCCimageDlg::OnBnClickedBtnLoad()
+{
+	if (m_image != NULL)
+	{
+		m_image.Destroy();
+	}
+	m_image.Load(g_strFileImage);	
+
+	UpdateDisplay();
+}
+
+void CMFCCimageDlg::UpdateDisplay()
+{
+	CClientDC dc(this);
+	m_image.Draw(dc, 0, 0);
+}
+
+void CMFCCimageDlg::moveRect()
+{
+	static int nStaticX = 0;
+	static int nStaticY = 0;
+	int nGray = 80;
+	int nWidth = m_image.GetWidth();
+	int nHeight = m_image.GetHeight();
+	int nPitch = m_image.GetPitch();
+	unsigned char* fm = (unsigned char*)m_image.GetBits();
+
+	memset(fm, 0xff, nPitch * nHeight);
+	for (int j = nStaticY; j < nStaticY + 48; j++)
+	{
+		for (int i = nStaticX; i < nStaticX + 64; i++)
+		{
+			validImagePos(i, j);
+			fm[j * nPitch + i] = nGray;
+		}
+	}
+	nStaticX++;
+	nStaticY++;
+
+	UpdateDisplay();
+}
+
+void CMFCCimageDlg::OnBnClickedBtnAction()
+{
+	for (int i = 0; i < 100; i++)
+	{
+		moveRect();
+		Sleep(50);
+	}	
+}
+
+BOOL CMFCCimageDlg::validImagePos(int x, int y)
+{
+	int nWidth = m_image.GetWidth();
+	int nHeight = m_image.GetHeight();
+
+	CRect rect(0, 0, nWidth, nHeight);
+
+	return rect.PtInRect(CPoint(x, y));
 }
